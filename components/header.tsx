@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export function Header() {
   return (
@@ -45,6 +46,9 @@ export function Header() {
           <Bell className="h-5 w-5 text-muted-foreground" />
           <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-primary" />
         </Button>
+
+        {/* Theme Toggle */}
+        <ThemeToggle />
 
         {/* User Menu */}
         <DropdownMenu>
