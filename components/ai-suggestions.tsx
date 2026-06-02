@@ -34,7 +34,7 @@ const suggestions: Suggestion[] = [
     type: "alert",
     title: "Follow-up needed",
     description:
-      "3 patients haven&apos;t logged their meals in 7+ days. Schedule check-ins.",
+      "3 patients have not logged their meals in 7+ days. Schedule check-ins.",
     action: "Send Reminders",
   },
 ]
