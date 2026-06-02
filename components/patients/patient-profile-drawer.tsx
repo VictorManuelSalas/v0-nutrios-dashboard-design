@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
-import { type PatientDetail } from "./mock-data"
+import { type Patient } from "./mock-data"
 import {
   AreaChart,
   Area,
@@ -26,11 +26,16 @@ import {
   Mail,
   Briefcase,
   Calendar,
+  User,
   FileText,
+  TrendingUp,
+  Utensils,
+  CreditCard,
+  Activity,
   ImageIcon,
   Scale,
   Target,
-  Utensils,
+  CheckCircle2,
   AlertCircle,
   Clock,
   ChevronRight,
@@ -40,12 +45,26 @@ import {
   Eye,
 } from "lucide-react"
 
-const statusConfig = {
-  active: { label: "Active", className: "bg-primary/10 text-primary border-primary/20" },
-  "at-risk": { label: "At Risk", className: "bg-destructive/10 text-destructive border-destructive/20" },
-  excellent: { label: "Excellent Progress", className: "bg-primary/10 text-primary border-primary/20" },
-  "needs-follow-up": { label: "Needs Follow Up", className: "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20" },
-  inactive: { label: "Inactive", className: "bg-muted text-muted-foreground border-border" },
+function getInitials(name: string) {
+  return name.split(" ").map((n) => n[0]).join("").toUpperCase()
+}
+
+function getAvatarColor(id: string) {
+  const colors = [
+    "bg-primary/20 text-primary",
+    "bg-[#3B82F6]/20 text-[#3B82F6]",
+    "bg-[#8B5CF6]/20 text-[#8B5CF6]",
+    "bg-[#F59E0B]/20 text-[#F59E0B]",
+    "bg-[#EC4899]/20 text-[#EC4899]",
+  ]
+  const index = parseInt(id.replace("p", "")) % colors.length
+  return colors[index]
+}
+
+function RiskBadge({ risk }: { risk: Patient["risk"] }) {
+  if (risk === "high") return <Badge className="bg-destructive/10 text-destructive border-destructive/20">At Risk</Badge>
+  if (risk === "medium") return <Badge className="bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20">Needs Follow Up</Badge>
+  return <Badge className="bg-primary/10 text-primary border-primary/20">Healthy Progress</Badge>
 }
 
 function InfoRow({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
@@ -62,32 +81,37 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ComponentType<{ cla
   )
 }
 
-function MetricBox({ label, value, color }: { label: string; value: string | number; color?: string }) {
+function MetricBox({ label, value, unit, color }: { label: string; value: string | number; unit?: string; color?: string }) {
   return (
     <div className="flex flex-col items-center rounded-xl border border-border bg-muted/30 px-3 py-3">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className={cn("text-xl font-bold", color ?? "text-foreground")}>{value}</span>
+      <span className={cn("text-xl font-bold", color ?? "text-foreground")}>
+        {value}
+        {unit && <span className="text-sm font-normal text-muted-foreground ml-0.5">{unit}</span>}
+      </span>
     </div>
   )
 }
 
-/* ─── TABS ─── */
+/* ────────── TABS ────────── */
 
-function OverviewTab({ patient }: { patient: PatientDetail }) {
+function OverviewTab({ patient }: { patient: Patient }) {
   return (
     <div className="space-y-5">
+      {/* Vitals grid */}
       <div>
         <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Current Vitals</h4>
         <div className="grid grid-cols-4 gap-2">
-          <MetricBox label="Weight" value={`${patient.currentWeight}kg`} />
-          <MetricBox label="Goal" value={`${patient.goalWeight}kg`} color="text-[#3B82F6]" />
-          <MetricBox label="BMI" value={patient.bmi} color={patient.bmi > 25 ? "text-amber-500" : "text-primary"} />
-          <MetricBox label="Body Fat" value={`${patient.bodyFat}%`} />
+          <MetricBox label="Weight" value={patient.currentWeight} unit="kg" color="text-foreground" />
+          <MetricBox label="Goal" value={patient.goalWeight} unit="kg" color="text-[#3B82F6]" />
+          <MetricBox label="BMI" value={patient.bmi} color={patient.bmi > 25 ? "text-[#F59E0B]" : "text-primary"} />
+          <MetricBox label="Body Fat" value={`${patient.bodyFat}%`} color="text-foreground" />
         </div>
       </div>
 
       <Separator />
 
+      {/* Patient info */}
       <div>
         <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Patient Information</h4>
         <div className="space-y-3">
@@ -102,18 +126,24 @@ function OverviewTab({ patient }: { patient: PatientDetail }) {
 
       <Separator />
 
+      {/* Goals */}
       <div>
-        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Goal</h4>
-        <Badge className="bg-primary/10 text-primary border-primary/20">{patient.goal}</Badge>
+        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Goals</h4>
+        <div className="flex flex-wrap gap-2">
+          {patient.goals.map((goal) => (
+            <Badge key={goal} className="bg-primary/10 text-primary border-primary/20">{goal}</Badge>
+          ))}
+        </div>
       </div>
 
       <Separator />
 
+      {/* Progress snapshot */}
       <div>
         <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Progress Snapshot</h4>
         <div className="space-y-3">
           <div>
-            <div className="flex justify-between mb-1.5">
+            <div className="flex justify-between mb-1">
               <span className="text-xs text-muted-foreground">Diet Adherence</span>
               <span className="text-xs font-semibold text-primary">{patient.dietAdherence}%</span>
             </div>
@@ -122,7 +152,7 @@ function OverviewTab({ patient }: { patient: PatientDetail }) {
             </div>
           </div>
           <div>
-            <div className="flex justify-between mb-1.5">
+            <div className="flex justify-between mb-1">
               <span className="text-xs text-muted-foreground">Goal Completion</span>
               <span className="text-xs font-semibold text-[#3B82F6]">{patient.goalCompletion}%</span>
             </div>
@@ -136,7 +166,7 @@ function OverviewTab({ patient }: { patient: PatientDetail }) {
   )
 }
 
-function MedicalHistoryTab({ patient }: { patient: PatientDetail }) {
+function MedicalHistoryTab({ patient }: { patient: Patient }) {
   return (
     <div className="space-y-5">
       <div>
@@ -159,7 +189,7 @@ function MedicalHistoryTab({ patient }: { patient: PatientDetail }) {
         <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Allergies</h4>
         <div className="flex flex-wrap gap-2">
           {patient.allergies.map((a, i) => (
-            <Badge key={i} className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20">{a}</Badge>
+            <Badge key={i} className="bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20">{a}</Badge>
           ))}
         </div>
       </div>
@@ -183,7 +213,7 @@ function MedicalHistoryTab({ patient }: { patient: PatientDetail }) {
   )
 }
 
-function ProgressTab({ patient }: { patient: PatientDetail }) {
+function ProgressTab({ patient }: { patient: Patient }) {
   return (
     <div className="space-y-6">
       <div>
@@ -194,7 +224,10 @@ function ProgressTab({ patient }: { patient: PatientDetail }) {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} dy={8} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} dx={-5} />
-              <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", fontSize: 12 }} labelStyle={{ fontWeight: 600, color: "var(--foreground)" }} />
+              <Tooltip
+                contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", fontSize: 12 }}
+                labelStyle={{ fontWeight: 600, color: "var(--foreground)" }}
+              />
               <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
               <Line type="monotone" dataKey="weight" name="Weight (kg)" stroke="#22C55E" strokeWidth={2} dot={{ r: 4, fill: "#22C55E" }} />
               <Line type="monotone" dataKey="bmi" name="BMI" stroke="#3B82F6" strokeWidth={2} dot={{ r: 4, fill: "#3B82F6" }} />
@@ -221,7 +254,10 @@ function ProgressTab({ patient }: { patient: PatientDetail }) {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} dy={8} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} dx={-5} />
-              <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", fontSize: 12 }} labelStyle={{ fontWeight: 600, color: "var(--foreground)" }} />
+              <Tooltip
+                contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", fontSize: 12 }}
+                labelStyle={{ fontWeight: 600, color: "var(--foreground)" }}
+              />
               <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
               <Area type="monotone" dataKey="bodyFat" name="Body Fat %" stroke="#EF4444" fill="url(#gradFat)" strokeWidth={2} />
               <Area type="monotone" dataKey="muscle" name="Muscle Mass" stroke="#22C55E" fill="url(#gradMuscle)" strokeWidth={2} />
@@ -231,7 +267,7 @@ function ProgressTab({ patient }: { patient: PatientDetail }) {
       </div>
 
       <div>
-        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Water Intake (L/day)</h4>
+        <h4 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Water Consumption (L/day)</h4>
         <div className="h-36 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={patient.weightHistory} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
@@ -244,7 +280,10 @@ function ProgressTab({ patient }: { patient: PatientDetail }) {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
               <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} dy={8} />
               <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 11 }} dx={-5} domain={[0, 3]} />
-              <Tooltip contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", fontSize: 12 }} labelStyle={{ fontWeight: 600, color: "var(--foreground)" }} />
+              <Tooltip
+                contentStyle={{ backgroundColor: "var(--card)", border: "1px solid var(--border)", borderRadius: "12px", fontSize: 12 }}
+                labelStyle={{ fontWeight: 600, color: "var(--foreground)" }}
+              />
               <Area type="monotone" dataKey="water" name="Water (L)" stroke="#3B82F6" fill="url(#gradWater)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
@@ -254,18 +293,19 @@ function ProgressTab({ patient }: { patient: PatientDetail }) {
   )
 }
 
-function DietsTab({ patient }: { patient: PatientDetail }) {
+function DietsTab({ patient }: { patient: Patient }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <span className="text-sm text-muted-foreground">{patient.diets.length} diet(s) assigned</span>
-        <Button size="sm" className="gap-1.5 h-8 text-xs">
-          <Plus className="h-3.5 w-3.5" /> Generate New Diet
+        <Button size="sm" className="gap-1.5 text-xs h-8">
+          <Plus className="h-3.5 w-3.5" />
+          Generate New Diet
         </Button>
       </div>
       <div className="space-y-3">
         {patient.diets.map((diet) => (
-          <div key={diet.id} className="space-y-3 rounded-xl border border-border bg-card p-4">
+          <div key={diet.id} className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-foreground truncate">{diet.name}</p>
@@ -273,17 +313,17 @@ function DietsTab({ patient }: { patient: PatientDetail }) {
               </div>
               <Badge
                 className={cn(
-                  "flex-shrink-0 text-xs",
+                  "text-xs flex-shrink-0",
                   diet.status === "Active" && "bg-primary/10 text-primary border-primary/20",
                   diet.status === "Completed" && "bg-[#3B82F6]/10 text-[#3B82F6] border-[#3B82F6]/20",
-                  diet.status === "Paused" && "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                  diet.status === "Paused" && "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20"
                 )}
               >
                 {diet.status}
               </Badge>
             </div>
             <div>
-              <div className="flex justify-between mb-1.5">
+              <div className="flex justify-between mb-1">
                 <span className="text-xs text-muted-foreground">Compliance</span>
                 <span className="text-xs font-semibold text-primary">{diet.compliance}%</span>
               </div>
@@ -292,9 +332,15 @@ function DietsTab({ patient }: { patient: PatientDetail }) {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="gap-1 h-7 flex-1 text-xs"><Eye className="h-3 w-3" /> View</Button>
-              <Button variant="outline" size="sm" className="gap-1 h-7 flex-1 text-xs"><Copy className="h-3 w-3" /> Duplicate</Button>
-              <Button variant="outline" size="sm" className="gap-1 h-7 flex-1 text-xs"><Pencil className="h-3 w-3" /> Edit</Button>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-7 flex-1">
+                <Eye className="h-3 w-3" /> View
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-7 flex-1">
+                <Copy className="h-3 w-3" /> Duplicate
+              </Button>
+              <Button variant="outline" size="sm" className="gap-1.5 text-xs h-7 flex-1">
+                <Pencil className="h-3 w-3" /> Edit
+              </Button>
             </div>
           </div>
         ))}
@@ -303,7 +349,7 @@ function DietsTab({ patient }: { patient: PatientDetail }) {
   )
 }
 
-function AppointmentsTab({ patient }: { patient: PatientDetail }) {
+function AppointmentsTab({ patient }: { patient: Patient }) {
   const upcoming = patient.appointments.filter((a) => a.status === "Upcoming")
   const past = patient.appointments.filter((a) => a.status !== "Upcoming")
 
@@ -323,8 +369,8 @@ function AppointmentsTab({ patient }: { patient: PatientDetail }) {
                   <p className="text-xs text-muted-foreground">{appt.date} · {appt.time}</p>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="outline" size="sm" className="h-7 text-xs">Reschedule</Button>
-                  <Button variant="outline" size="sm" className="h-7 text-xs text-destructive border-destructive/20 hover:bg-destructive/10">Cancel</Button>
+                  <Button variant="outline" size="sm" className="text-xs h-7">Reschedule</Button>
+                  <Button variant="outline" size="sm" className="text-xs h-7 text-destructive border-destructive/20 hover:bg-destructive/10">Cancel</Button>
                 </div>
               </div>
             ))}
@@ -361,26 +407,30 @@ function AppointmentsTab({ patient }: { patient: PatientDetail }) {
       )}
 
       <Button className="w-full gap-2" size="sm">
-        <Plus className="h-4 w-4" /> Schedule New Appointment
+        <Plus className="h-4 w-4" />
+        Schedule New Appointment
       </Button>
     </div>
   )
 }
 
-function PaymentsTab({ patient }: { patient: PatientDetail }) {
-  const totalPaid = patient.payments
-    .filter((p) => p.status === "Paid")
-    .reduce((sum, p) => sum + parseFloat(p.amount.replace("$", "")), 0)
+function PaymentsTab({ patient }: { patient: Patient }) {
+  const total = patient.payments.reduce((sum, p) => {
+    if (p.status === "Paid") {
+      return sum + parseFloat(p.amount.replace("$", ""))
+    }
+    return sum
+  }, 0)
 
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl border border-border bg-muted/30 p-3 text-center">
           <p className="text-xs text-muted-foreground">Total Paid</p>
-          <p className="text-xl font-bold text-primary">${totalPaid.toFixed(2)}</p>
+          <p className="text-xl font-bold text-primary">${total.toFixed(2)}</p>
         </div>
         <div className="rounded-xl border border-border bg-muted/30 p-3 text-center">
-          <p className="text-xs text-muted-foreground">Transactions</p>
+          <p className="text-xs text-muted-foreground">Payments</p>
           <p className="text-xl font-bold text-foreground">{patient.payments.length}</p>
         </div>
       </div>
@@ -406,7 +456,7 @@ function PaymentsTab({ patient }: { patient: PatientDetail }) {
                     className={cn(
                       "text-[10px]",
                       payment.status === "Paid" && "bg-primary/10 text-primary border-primary/20",
-                      payment.status === "Pending" && "bg-amber-500/10 text-amber-600 border-amber-500/20",
+                      payment.status === "Pending" && "bg-[#F59E0B]/10 text-[#F59E0B] border-[#F59E0B]/20",
                       payment.status === "Failed" && "bg-destructive/10 text-destructive border-destructive/20"
                     )}
                   >
@@ -422,12 +472,12 @@ function PaymentsTab({ patient }: { patient: PatientDetail }) {
   )
 }
 
-function ActivityFeedTab({ patient }: { patient: PatientDetail }) {
+function ActivityFeedTab({ patient }: { patient: Patient }) {
   const iconMap = {
     meal: { icon: ImageIcon, color: "text-primary", bg: "bg-primary/10" },
     weight: { icon: Scale, color: "text-[#3B82F6]", bg: "bg-[#3B82F6]/10" },
     goal: { icon: Target, color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/10" },
-    diet: { icon: Utensils, color: "text-amber-500", bg: "bg-amber-500/10" },
+    diet: { icon: Utensils, color: "text-[#F59E0B]", bg: "bg-[#F59E0B]/10" },
     appointment: { icon: Calendar, color: "text-[#3B82F6]", bg: "bg-[#3B82F6]/10" },
     missed: { icon: AlertCircle, color: "text-destructive", bg: "bg-destructive/10" },
   }
@@ -446,7 +496,7 @@ function ActivityFeedTab({ patient }: { patient: PatientDetail }) {
               </div>
               {!isLast && <div className="my-1 w-px flex-1 bg-border" />}
             </div>
-            <div className={cn("flex-1 min-w-0", !isLast && "pb-4")}>
+            <div className={cn("pb-4 flex-1 min-w-0", isLast && "pb-0")}>
               <p className="text-sm text-foreground leading-snug">{item.text}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">{item.date}</p>
             </div>
@@ -479,7 +529,7 @@ function DocumentsTab() {
               <p className="text-sm font-medium text-foreground truncate">{doc.name}</p>
               <p className="text-xs text-muted-foreground">{doc.date} · {doc.size}</p>
             </div>
-            <button className="text-muted-foreground transition-colors hover:text-foreground">
+            <button className="text-muted-foreground hover:text-foreground transition-colors">
               <Eye className="h-4 w-4" />
             </button>
           </div>
@@ -489,54 +539,45 @@ function DocumentsTab() {
   )
 }
 
-/* ─── MAIN DRAWER ─── */
+/* ────────── MAIN DRAWER ────────── */
 
 interface PatientProfileDrawerProps {
-  patient: PatientDetail | null
+  patient: Patient | null
   open: boolean
   onClose: () => void
 }
 
-const TABS = [
-  { value: "overview", label: "Overview" },
-  { value: "medical", label: "Medical" },
-  { value: "progress", label: "Progress" },
-  { value: "diets", label: "Diets" },
-  { value: "appointments", label: "Appointments" },
-  { value: "payments", label: "Payments" },
-  { value: "activity", label: "Activity" },
-  { value: "documents", label: "Documents" },
-]
-
 export function PatientProfileDrawer({ patient, open, onClose }: PatientProfileDrawerProps) {
   if (!patient) return null
-
-  const status = statusConfig[patient.status]
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
       <SheetContent side="right" className="flex w-full max-w-xl flex-col gap-0 p-0 sm:max-w-xl">
-        {/* Header */}
+        {/* Profile header */}
         <div className="flex-shrink-0 border-b border-border bg-gradient-to-br from-primary/5 to-[#3B82F6]/5 px-6 py-5">
           <div className="flex items-start gap-4">
             <Avatar className="h-16 w-16 ring-2 ring-primary/20">
               <AvatarImage src={patient.avatar} alt={patient.name} />
-              <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
-                {patient.name.split(" ").map((n) => n[0]).join("")}
+              <AvatarFallback className={cn("text-lg font-bold", getAvatarColor(patient.id))}>
+                {getInitials(patient.name)}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <SheetTitle className="text-lg font-bold text-foreground">{patient.name}</SheetTitle>
-                <Badge variant="outline" className={status.className}>{status.label}</Badge>
+                <RiskBadge risk={patient.risk} />
               </div>
-              <p className="text-sm text-muted-foreground mt-0.5">
+              <p className="text-sm text-muted-foreground">
                 {patient.age} years · {patient.gender} · {patient.occupation}
               </p>
               <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
-                <span><span className="font-semibold text-primary">{patient.dietAdherence}%</span> adherence</span>
-                <span><span className="font-semibold text-[#3B82F6]">{patient.goalCompletion}%</span> goal</span>
-                <span>Check-in: {patient.lastCheckIn}</span>
+                <span>
+                  <span className="font-semibold text-primary">{patient.dietAdherence}%</span> adherence
+                </span>
+                <span>
+                  <span className="font-semibold text-[#3B82F6]">{patient.goalCompletion}%</span> goal
+                </span>
+                <span>Check-in: {patient.lastCheckin}</span>
               </div>
             </div>
           </div>
@@ -544,8 +585,17 @@ export function PatientProfileDrawer({ patient, open, onClose }: PatientProfileD
 
         {/* Tabs */}
         <Tabs defaultValue="overview" className="flex flex-1 flex-col overflow-hidden">
-          <TabsList className="flex-shrink-0 w-full justify-start overflow-x-auto rounded-none border-b border-border bg-background px-2 h-10 gap-0">
-            {TABS.map((tab) => (
+          <TabsList className="flex-shrink-0 w-full justify-start overflow-x-auto rounded-none border-b border-border bg-background px-4 h-10 gap-0">
+            {[
+              { value: "overview", label: "Overview" },
+              { value: "medical", label: "Medical" },
+              { value: "progress", label: "Progress" },
+              { value: "diets", label: "Diets" },
+              { value: "appointments", label: "Appointments" },
+              { value: "payments", label: "Payments" },
+              { value: "activity", label: "Activity" },
+              { value: "documents", label: "Documents" },
+            ].map((tab) => (
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
@@ -559,14 +609,30 @@ export function PatientProfileDrawer({ patient, open, onClose }: PatientProfileD
           <div className="flex-1 overflow-hidden">
             <ScrollArea className="h-full">
               <div className="p-6">
-                <TabsContent value="overview" className="m-0"><OverviewTab patient={patient} /></TabsContent>
-                <TabsContent value="medical" className="m-0"><MedicalHistoryTab patient={patient} /></TabsContent>
-                <TabsContent value="progress" className="m-0"><ProgressTab patient={patient} /></TabsContent>
-                <TabsContent value="diets" className="m-0"><DietsTab patient={patient} /></TabsContent>
-                <TabsContent value="appointments" className="m-0"><AppointmentsTab patient={patient} /></TabsContent>
-                <TabsContent value="payments" className="m-0"><PaymentsTab patient={patient} /></TabsContent>
-                <TabsContent value="activity" className="m-0"><ActivityFeedTab patient={patient} /></TabsContent>
-                <TabsContent value="documents" className="m-0"><DocumentsTab /></TabsContent>
+                <TabsContent value="overview" className="m-0">
+                  <OverviewTab patient={patient} />
+                </TabsContent>
+                <TabsContent value="medical" className="m-0">
+                  <MedicalHistoryTab patient={patient} />
+                </TabsContent>
+                <TabsContent value="progress" className="m-0">
+                  <ProgressTab patient={patient} />
+                </TabsContent>
+                <TabsContent value="diets" className="m-0">
+                  <DietsTab patient={patient} />
+                </TabsContent>
+                <TabsContent value="appointments" className="m-0">
+                  <AppointmentsTab patient={patient} />
+                </TabsContent>
+                <TabsContent value="payments" className="m-0">
+                  <PaymentsTab patient={patient} />
+                </TabsContent>
+                <TabsContent value="activity" className="m-0">
+                  <ActivityFeedTab patient={patient} />
+                </TabsContent>
+                <TabsContent value="documents" className="m-0">
+                  <DocumentsTab />
+                </TabsContent>
               </div>
             </ScrollArea>
           </div>
