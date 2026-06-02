@@ -96,8 +96,10 @@ export function PatientsView({ patients, viewMode, onOpenProfile }: PatientsView
   }
 
   if (viewMode === "grid") {
+    console.log("Rendering grid view with patients:", patients) // Debug log
     return (
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        
         {patients.map((patient) => (
           <PatientCard key={patient.id} patient={patient} onOpenProfile={onOpenProfile} />
         ))}

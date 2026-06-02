@@ -8,8 +8,7 @@ import { PatientsView } from "@/components/patients/patients-view"
 import { PatientsAiInsights } from "@/components/patients/patients-ai-insights"
 import { PatientProfileDrawer } from "@/components/patients/patient-profile-drawer"
 import { mockPatients, type Patient } from "@/components/patients/mock-data"
-import { Button } from "@/components/ui/button"
-import { UserPlus } from "lucide-react"
+ 
 
 export default function PatientsPage() {
   const [search, setSearch] = useState("")
@@ -72,10 +71,10 @@ export default function PatientsPage() {
               Manage, monitor, and track all patient progress.
             </p>
           </div>
-          <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
+          {/* <Button className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm">
             <UserPlus className="h-4 w-4" />
             New Patient
-          </Button>
+          </Button> */}
         </div>
 
         {/* Stats */}

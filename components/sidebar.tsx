@@ -1,6 +1,5 @@
 "use client"
 
-import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
@@ -44,12 +43,15 @@ const mainNavItems: NavItem[] = [
 
 const secondaryNavItems: NavItem[] = [
   { title: "Payments", href: "/payments", icon: CreditCard },
-  { title: "Reports", href: "/reports", icon: FileText },
-  { title: "Settings", href: "/settings", icon: Settings },
+  { title: "Reports", href: "/reports", icon: FileText } 
 ]
 
-export function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false)
+interface SidebarProps {
+  collapsed: boolean
+  onCollapse: (value: boolean) => void
+}
+
+export function Sidebar({ collapsed, onCollapse }: SidebarProps) {
   const pathname = usePathname()
 
   return (
@@ -182,7 +184,7 @@ export function Sidebar() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setCollapsed(!collapsed)}
+            onClick={() => onCollapse(!collapsed)}
             className={cn(
               "w-full text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
               collapsed ? "justify-center px-0" : "justify-start"
