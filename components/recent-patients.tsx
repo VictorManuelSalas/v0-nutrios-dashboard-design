@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 import { ChevronRight, Users } from "lucide-react"
+import Link from "next/link"
 
 interface Patient {
   id: string
@@ -69,9 +70,11 @@ export function RecentPatients() {
           </div>
           <CardTitle className="text-base font-semibold">Recent Patients</CardTitle>
         </div>
-        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground">
-          View All
-          <ChevronRight className="ml-1 h-3 w-3" />
+        <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" asChild>
+          <Link href="/patients">
+            View All
+            <ChevronRight className="ml-1 h-3 w-3" />
+          </Link>
         </Button>
       </CardHeader>
       <CardContent>
